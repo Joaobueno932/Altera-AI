@@ -15,6 +15,13 @@
       "when": 1764021390165,
       "tag": "0001_mushy_dakota_north",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1764039410830,
+      "tag": "0002_chief_psylocke",
+      "breakpoints": true
     }
   ]
 }
