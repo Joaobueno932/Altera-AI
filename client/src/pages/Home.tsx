@@ -2,14 +2,19 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { BrainIcon } from "@/components/BrainIcon";
 import { BottomNav } from "@/components/ui/bottom-nav";
 import { Button } from "@/components/ui/button";
-import { MobileCard } from "@/components/ui/mobile-card";
+import { InsightBubble } from "@/components/ui/insight-bubble";
+import { MissionCard } from "@/components/ui/mission-card";
+import { MobileContainer } from "@/components/ui/mobile-container";
+import { ProfileCard } from "@/components/ui/profile-card";
+import { SectionTitle } from "@/components/ui/section-title";
+import { TagSelector } from "@/components/ui/tag-selector";
 import { AssessorChat } from "@/features/chat/AssessorChat";
 import { MatchingDeck } from "@/features/matching/MatchingDeck";
 import { SecondBrainDashboard } from "@/features/secondBrain/SecondBrainDashboard";
 import { LifeProgress } from "@/features/progress/LifeProgress";
 import { cn } from "@/lib/utils";
 import { Loader2, LogOut, MessageCircle, Sparkles, TrendingUp, UserCheck } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 
 const tabs = [
@@ -23,6 +28,17 @@ export default function Home() {
   const { user, loading, isAuthenticated, logout } = useAuth();
   const [, setLocation] = useLocation();
   const [active, setActive] = useState("brain");
+
+  const tagOptions = useMemo(
+    () =>
+      tabs.map(tab => ({
+        label: tab.label,
+        value: tab.id,
+        icon: tab.icon,
+        hint: tab.id === "brain" ? "ativo" : undefined,
+      })),
+    []
+  );
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -52,24 +68,23 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-30 bg-background/90 backdrop-blur border-b border-border/70">
-        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <BrainIcon className="w-10 h-10" />
-            <div>
-              <p className="text-xs uppercase tracking-wide text-primary">Second Brain</p>
-              <h1 className="text-xl font-semibold leading-tight">Seu app nativo</h1>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="text-right">
-              <p className="text-sm font-medium">{user?.name || "Você"}</p>
-              <p className="text-xs text-muted-foreground">Assessor ativo</p>
+    <>
+      <MobileContainer>
+        <header className="sticky top-0 z-30 -mx-4 mb-2 bg-background/90 backdrop-blur">
+          <div className="mx-auto flex max-w-md items-center justify-between border-b border-border/70 px-4 py-4">
+            <div className="flex items-center gap-3">
+              <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-inner shadow-primary/30">
+                <BrainIcon className="w-7 h-7" />
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.2em] text-primary">Second Brain</p>
+                <h1 className="text-xl font-semibold leading-tight">Experience</h1>
+              </div>
             </div>
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
+              className="rounded-full"
               onClick={async () => {
                 await logout();
                 setLocation("/login");
@@ -78,23 +93,62 @@ export default function Home() {
               <LogOut className="w-5 h-5" />
             </Button>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <main className={cn("max-w-md mx-auto px-4 pb-28 pt-4 space-y-4")}
-      >
-        <MobileCard className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-muted-foreground">Ritmo dinâmico</p>
-            <p className="text-lg font-semibold">Assessor acompanhando seu dia</p>
-          </div>
-          <div className="px-3 py-2 rounded-full bg-primary/10 text-primary text-sm">Mobile-first</div>
-        </MobileCard>
+        <section className="space-y-4">
+          <ProfileCard
+            name={user?.name || "Você"}
+            role="Assessor ativo"
+            status="Presença em tempo real garantida"
+            onAction={() => setActive("progress")}
+            actionLabel="Ver status"
+          />
 
-        {renderContent()}
-      </main>
+          <SectionTitle
+            eyebrow="Fluxo diário"
+            title="Selecione seu foco"
+            subtitle="Interface mobile-first com micro animações e cores oficiais"
+            action={
+              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setActive("brain")}> 
+                Resetar
+              </Button>
+            }
+          />
+
+          <TagSelector
+            options={tagOptions}
+            value={[active]}
+            onChange={([next]) => next && setActive(next)}
+            className="pt-1"
+          />
+
+          <InsightBubble
+            title="Assistente atento ao seu contexto"
+            description="Design minimalista, cores oficiais e animações suaves para cada interação."
+          />
+
+          <MissionCard
+            title="Missão do dia"
+            description="Organizar prioridades, revisar conhecimentos e acompanhar progresso."
+            progress={72}
+            location="Hub mobile"
+            actions={
+              <div className="flex gap-2">
+                <Button variant="outline" className="w-full" size="sm" onClick={() => setActive("matching")}>
+                  Matching
+                </Button>
+                <Button className="w-full" size="sm" onClick={() => setActive("chat")}>
+                  Abrir chat
+                </Button>
+              </div>
+            }
+          />
+
+          <main className={cn("space-y-4")}>{renderContent()}</main>
+        </section>
+      </MobileContainer>
 
       <BottomNav items={tabs} active={active} onSelect={setActive} />
-    </div>
+    </>
   );
 }
