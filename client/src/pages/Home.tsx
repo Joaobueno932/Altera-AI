@@ -1,21 +1,28 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { BrainIcon } from "@/components/BrainIcon";
+import { BottomNav } from "@/components/ui/bottom-nav";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { trpc } from "@/lib/trpc";
-import { Loader2, Send, LogOut } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { MobileCard } from "@/components/ui/mobile-card";
+import { AssessorChat } from "@/features/chat/AssessorChat";
+import { MatchingDeck } from "@/features/matching/MatchingDeck";
+import { SecondBrainDashboard } from "@/features/secondBrain/SecondBrainDashboard";
+import { LifeProgress } from "@/features/progress/LifeProgress";
+import { cn } from "@/lib/utils";
+import { Loader2, LogOut, MessageCircle, Sparkles, TrendingUp, UserCheck } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Streamdown } from "streamdown";
+
+const tabs = [
+  { id: "brain", label: "Brain", icon: <Sparkles className="w-5 h-5" /> },
+  { id: "matching", label: "Matching", icon: <UserCheck className="w-5 h-5" /> },
+  { id: "progress", label: "Progresso", icon: <TrendingUp className="w-5 h-5" /> },
+  { id: "chat", label: "Chat", icon: <MessageCircle className="w-5 h-5" /> },
+];
 
 export default function Home() {
   const { user, loading, isAuthenticated, logout } = useAuth();
   const [, setLocation] = useLocation();
-  const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const personality = trpc.personality.get.useQuery();
+  const [active, setActive] = useState("brain");
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -23,37 +30,7 @@ export default function Home() {
     }
   }, [loading, isAuthenticated, setLocation]);
 
-  useEffect(() => {
-    if (!loading && isAuthenticated && !personality.data && !personality.isLoading) {
-      setLocation("/questionnaire");
-    }
-  }, [loading, isAuthenticated, personality.data, personality.isLoading, setLocation]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!message.trim()) return;
-
-    const userMessage = message;
-    setMessage("");
-    setMessages(prev => [...prev, { role: "user", content: userMessage }]);
-
-    // Simular resposta da IA (substituir por chamada real ao LLM)
-    setTimeout(() => {
-      const aiResponse = `Entendi sua mensagem: "${userMessage}". Como seu segundo eu mais racional, vou te ajudar a pensar sobre isso de forma mais objetiva e equilibrada.`;
-      setMessages(prev => [...prev, { role: "assistant", content: aiResponse }]);
-    }, 1000);
-  };
-
-  const handleLogout = async () => {
-    await logout();
-    setLocation("/login");
-  };
-
-  if (loading || personality.isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -61,86 +38,63 @@ export default function Home() {
     );
   }
 
+  const renderContent = () => {
+    switch (active) {
+      case "matching":
+        return <MatchingDeck />;
+      case "progress":
+        return <LifeProgress />;
+      case "chat":
+        return <AssessorChat />;
+      default:
+        return <SecondBrainDashboard />;
+    }
+  };
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="glass-effect border-b border-border">
-        <div className="container py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="sticky top-0 z-30 bg-background/90 backdrop-blur border-b border-border/70">
+        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <BrainIcon className="w-10 h-10" />
             <div>
-              <h1 className="text-xl font-bold text-white">Seu Segundo Eu</h1>
-              <p className="text-sm text-muted-foreground">Mais racional e equilibrado</p>
+              <p className="text-xs uppercase tracking-wide text-primary">Second Brain</p>
+              <h1 className="text-xl font-semibold leading-tight">Seu app nativo</h1>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-2">
             <div className="text-right">
-              <p className="text-sm font-medium text-white">{user?.name || "Usuário"}</p>
-              <p className="text-xs text-muted-foreground">{user?.email}</p>
+              <p className="text-sm font-medium">{user?.name || "Você"}</p>
+              <p className="text-xs text-muted-foreground">Assessor ativo</p>
             </div>
-            <Button variant="ghost" size="icon" onClick={handleLogout}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={async () => {
+                await logout();
+                setLocation("/login");
+              }}
+            >
               <LogOut className="w-5 h-5" />
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 container py-6 flex flex-col max-w-4xl">
-        <div className="flex-1 space-y-4 overflow-y-auto mb-4">
-          {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full space-y-4 text-center">
-              <BrainIcon className="w-24 h-24" />
-              <div>
-                <h2 className="text-2xl font-bold text-white mb-2">Olá! Eu sou seu segundo eu</h2>
-                <p className="text-muted-foreground">
-                  Converse comigo sobre qualquer coisa. Vou te ajudar a pensar de forma mais racional e equilibrada.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <>
-              {messages.map((msg, index) => (
-                <div key={index} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                  {msg.role === "assistant" && (
-                    <BrainIcon className="w-8 h-8 mr-2 flex-shrink-0" />
-                  )}
-                  <div
-                    className={`max-w-[80%] rounded-2xl p-4 ${
-                      msg.role === "user"
-                        ? "bg-gradient-to-r from-[oklch(0.65_0.25_270)] to-[oklch(0.60_0.22_290)]"
-                        : "glass-effect"
-                    }`}
-                  >
-                    {msg.role === "assistant" ? (
-                      <Streamdown>{msg.content}</Streamdown>
-                    ) : (
-                      <p className="text-white">{msg.content}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-              <div ref={messagesEndRef} />
-            </>
-          )}
-        </div>
-
-        <form onSubmit={handleSendMessage} className="glass-effect rounded-2xl p-4">
-          <div className="flex space-x-2">
-            <Input
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Digite sua mensagem..."
-              className="flex-1 bg-input border-border text-white h-12"
-            />
-            <Button
-              type="submit"
-              size="icon"
-              className="h-12 w-12 bg-gradient-to-r from-[oklch(0.65_0.25_270)] to-[oklch(0.60_0.22_290)] hover:opacity-90"
-            >
-              <Send className="w-5 h-5" />
-            </Button>
+      <main className={cn("max-w-md mx-auto px-4 pb-28 pt-4 space-y-4")}
+      >
+        <MobileCard className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-muted-foreground">Ritmo dinâmico</p>
+            <p className="text-lg font-semibold">Assessor acompanhando seu dia</p>
           </div>
-        </form>
+          <div className="px-3 py-2 rounded-full bg-primary/10 text-primary text-sm">Mobile-first</div>
+        </MobileCard>
+
+        {renderContent()}
       </main>
+
+      <BottomNav items={tabs} active={active} onSelect={setActive} />
     </div>
   );
 }
