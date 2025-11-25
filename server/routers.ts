@@ -5,10 +5,12 @@ import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { savePersonality, getPersonalityByUserId } from "./db";
 import { chatRouter } from "./chat";
+import { timelineRouter } from "./timeline";
 
 export const appRouter = router({
   system: systemRouter,
   chat: chatRouter,
+  timeline: timelineRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
