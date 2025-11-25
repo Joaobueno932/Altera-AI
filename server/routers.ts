@@ -4,9 +4,11 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { savePersonality, getPersonalityByUserId } from "./db";
+import { chatRouter } from "./chat";
 
 export const appRouter = router({
   system: systemRouter,
+  chat: chatRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
