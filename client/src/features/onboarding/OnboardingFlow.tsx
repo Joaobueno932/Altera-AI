@@ -94,8 +94,8 @@ export function OnboardingFlow({ onFinish }: { onFinish?: () => void }) {
 
   if (!step && done) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-4 text-center space-y-4">
-        <CheckCircle2 className="w-16 h-16 text-green-500" />
+      <div className="flex flex-1 flex-col items-center justify-center space-y-4 text-center">
+        <CheckCircle2 className="h-16 w-16 text-green-500" />
         <h2 className="text-2xl font-bold">Onboarding concluído</h2>
         <p className="text-muted-foreground">
           Seu Second Brain foi inicializado e o matching está calibrado.
@@ -105,77 +105,75 @@ export function OnboardingFlow({ onFinish }: { onFinish?: () => void }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-background/80 text-foreground">
-      <div className="max-w-md mx-auto px-4 pb-24 pt-6 flex flex-col gap-6">
-        <div className="space-y-3">
-          <ProgressBar progress={progress} />
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>{index + 1} / {onboardingSteps.length}</span>
-            <span>20-40s</span>
-          </div>
+    <div className="flex flex-col gap-6">
+      <div className="space-y-3 pt-2">
+        <ProgressBar progress={progress} />
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>{index + 1} / {onboardingSteps.length}</span>
+          <span>20-40s</span>
         </div>
+      </div>
 
-        <AnimatePresence mode="wait" initial={false}>
-          {step && (
-            <motion.div
-              key={step.id}
-              variants={animationVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ type: "spring", stiffness: 260, damping: 26 }}
-            >
-              <MobileCard className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
-                    <Sparkles className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-primary">Onboarding</p>
-                    <h2 className="text-2xl font-bold leading-tight">{step.title}</h2>
-                    <p className="text-sm text-muted-foreground mt-1">{step.description}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-3">
-                  {step.options.map(option => (
-                    <Chip
-                      key={option}
-                      onClick={() => toggleOption(option)}
-                      className={cn(
-                        "w-full justify-between text-left text-base flex items-center",
-                        answers[step.id]?.includes(option)
-                          ? "bg-primary/20 border-primary/70 text-primary shadow-inner"
-                          : ""
-                      )}
-                    >
-                      {option}
-                      {answers[step.id]?.includes(option) && <CheckCircle2 className="w-5 h-5" />}
-                    </Chip>
-                  ))}
-                </div>
-              </MobileCard>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            className="flex-1 h-12"
-            onClick={handleBack}
-            disabled={index === 0 || saving}
+      <AnimatePresence mode="wait" initial={false}>
+        {step && (
+          <motion.div
+            key={step.id}
+            variants={animationVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ type: "spring", stiffness: 260, damping: 26 }}
           >
-            Voltar
-          </Button>
-          <Button
-            className="flex-1 h-12 bg-gradient-to-r from-primary to-secondary"
-            onClick={handleNext}
-            disabled={!canProceed || saving}
-          >
-            {index === onboardingSteps.length - 1 ? "Finalizar" : "Continuar"}
-          </Button>
-        </div>
+            <MobileCard className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <Sparkles className="h-6 w-6" />
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-primary">Onboarding</p>
+                  <h2 className="text-2xl font-bold leading-tight">{step.title}</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">{step.description}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3">
+                {step.options.map(option => (
+                  <Chip
+                    key={option}
+                    onClick={() => toggleOption(option)}
+                    className={cn(
+                      "flex w-full items-center justify-between text-left text-base",
+                      answers[step.id]?.includes(option)
+                        ? "bg-primary/20 border-primary/70 text-primary shadow-inner"
+                        : ""
+                    )}
+                  >
+                    {option}
+                    {answers[step.id]?.includes(option) && <CheckCircle2 className="h-5 w-5" />}
+                  </Chip>
+                ))}
+              </div>
+            </MobileCard>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="flex items-center gap-3 pb-2">
+        <Button
+          variant="ghost"
+          className="flex-1 h-12"
+          onClick={handleBack}
+          disabled={index === 0 || saving}
+        >
+          Voltar
+        </Button>
+        <Button
+          className="flex-1 h-12 bg-gradient-to-r from-primary to-secondary"
+          onClick={handleNext}
+          disabled={!canProceed || saving}
+        >
+          {index === onboardingSteps.length - 1 ? "Finalizar" : "Continuar"}
+        </Button>
       </div>
     </div>
   );

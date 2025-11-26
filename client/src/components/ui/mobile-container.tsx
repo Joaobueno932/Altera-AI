@@ -4,9 +4,16 @@ import { ReactNode } from "react";
 interface MobileContainerProps {
   children: ReactNode;
   className?: string;
+  contentClassName?: string;
+  hasBottomNav?: boolean;
 }
 
-export function MobileContainer({ children, className }: MobileContainerProps) {
+export function MobileContainer({
+  children,
+  className,
+  contentClassName,
+  hasBottomNav = false,
+}: MobileContainerProps) {
   return (
     <div
       className={cn(
@@ -15,7 +22,13 @@ export function MobileContainer({ children, className }: MobileContainerProps) {
         className
       )}
     >
-      <div className="mx-auto flex w-full max-w-md flex-col px-4 pb-28 pt-4 sm:px-6 sm:pt-8 sm:pb-32 gap-5">
+      <div
+        className={cn(
+          "mx-auto flex w-full max-w-md flex-col gap-5 px-4 pt-6 sm:px-6 sm:pt-8",
+          hasBottomNav ? "pb-28 sm:pb-32" : "pb-16 sm:pb-24",
+          contentClassName
+        )}
+      >
         {children}
       </div>
     </div>
