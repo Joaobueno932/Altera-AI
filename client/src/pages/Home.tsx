@@ -69,7 +69,7 @@ export default function Home() {
 
   return (
     <>
-      <MobileContainer>
+      <MobileContainer hasBottomNav>
         <header className="sticky top-0 z-30 -mx-4 mb-2 bg-background/90 backdrop-blur">
           <div className="mx-auto flex max-w-md items-center justify-between border-b border-border/70 px-4 py-4">
             <div className="flex items-center gap-3">
