@@ -8,6 +8,7 @@ import { chatRouter } from "./chat";
 import { timelineRouter } from "./timeline";
 import { onboardingRouter } from "./onboarding";
 import { matchingRouter } from "./matching/router";
+import { progressRouter } from "./progress";
 
 export const appRouter = router({
   system: systemRouter,
@@ -15,6 +16,7 @@ export const appRouter = router({
   timeline: timelineRouter,
   onboarding: onboardingRouter,
   matching: matchingRouter,
+  progress: progressRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
