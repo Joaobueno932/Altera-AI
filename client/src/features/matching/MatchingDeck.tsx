@@ -1,36 +1,59 @@
 import { MobileCard, SectionTitle } from "@/components/ui/mobile-card";
 import { Button } from "@/components/ui/button";
+import { trpc } from "@/lib/trpc";
 import { AnimatePresence, motion } from "framer-motion";
 import { Flame, Heart, Sparkles, X } from "lucide-react";
-import { useState } from "react";
-
-const profiles = [
-  {
-    name: "Lia",
-    match: 92,
-    headline: "Exploradora criativa • Impacto social",
-    tags: ["Deep talks", "Projetos paralelos", "Ritmo semanal"],
-  },
-  {
-    name: "Rafa",
-    match: 88,
-    headline: "Engenheiro curioso • Mentor de carreira",
-    tags: ["Mentoria", "Habits", "Foco tarde"],
-  },
-  {
-    name: "Maya",
-    match: 85,
-    headline: "Produtora musical • Busca conexões autênticas",
-    tags: ["Criatividade", "Construir junto", "Noite"],
-  },
-];
+import { useEffect, useState } from "react";
 
 export function MatchingDeck() {
+  const { data, isLoading } = trpc.matching.feed.useQuery({ limit: 10 });
+  const profiles = data?.items ?? [];
   const [index, setIndex] = useState(0);
 
-  const nextProfile = () => setIndex(prev => (prev + 1) % profiles.length);
+  useEffect(() => {
+    setIndex(0);
+  }, [profiles.length]);
 
-  const profile = profiles[index];
+  const nextProfile = () => {
+    if (profiles.length === 0) return;
+    setIndex(prev => (prev + 1) % profiles.length);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4 pb-24 animate-pulse">
+        <MobileCard className="space-y-3">
+          <div className="h-5 w-32 bg-muted rounded" />
+          <div className="h-10 w-full bg-muted rounded" />
+          <div className="h-52 w-full bg-muted rounded" />
+        </MobileCard>
+      </div>
+    );
+  }
+
+  if (profiles.length === 0) {
+    return (
+      <div className="space-y-4 pb-24">
+        <MobileCard className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="size-10 rounded-xl bg-secondary/20 text-secondary-foreground flex items-center justify-center">
+              <Flame className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-secondary-foreground">Matching</p>
+              <h2 className="text-xl font-semibold">Perfis compatíveis</h2>
+              <p className="text-sm text-muted-foreground">Buscando conexões para você...</p>
+            </div>
+          </div>
+          <div className="p-4 rounded-2xl bg-muted/50 text-muted-foreground text-sm">
+            Nenhuma conexão sugerida por enquanto.
+          </div>
+        </MobileCard>
+      </div>
+    );
+  }
+
+  const profile = profiles[index] ?? profiles[0];
 
   return (
     <div className="space-y-4 pb-24">
@@ -48,7 +71,7 @@ export function MatchingDeck() {
         <div className="relative h-80 overflow-hidden">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
-              key={profile.name}
+              key={profile.id ?? profile.name}
               className="absolute inset-0"
               initial={{ opacity: 0, x: 40 }}
               animate={{ opacity: 1, x: 0 }}
