@@ -29,9 +29,12 @@ export function OnboardingFlow({ onFinish }: { onFinish?: () => void }) {
   const progress = Math.round(((index + 1) / onboardingSteps.length) * 100);
 
   useEffect(() => {
-    saveOnboardingProgress(
-      Object.entries(answers).map(([id, responses]) => ({ id, responses }))
-    );
+    const payload = Object.entries(answers).map(([id, responses]) => ({ id, responses }));
+    if (payload.length === 0) return;
+
+    saveOnboardingProgress(payload).catch(error => {
+      console.error("[Onboarding] Failed to save progress", error);
+    });
   }, [answers]);
 
   const toggleOption = (value: string) => {
@@ -53,21 +56,34 @@ export function OnboardingFlow({ onFinish }: { onFinish?: () => void }) {
 
   const handleNext = async () => {
     if (!step || saving) return;
+
+    const payload = Object.entries(answers).map(([id, responses]) => ({ id, responses }));
+
     if (index < onboardingSteps.length - 1) {
-      setSaving(true);
-      await saveOnboardingProgress(
-        Object.entries(answers).map(([id, responses]) => ({ id, responses }))
-      );
-      setSaving(false);
-      setIndex(prev => prev + 1);
+      try {
+        setSaving(true);
+        await saveOnboardingProgress(payload);
+        setIndex(prev => prev + 1);
+      } catch (error) {
+        console.error("[Onboarding] Failed to save progress", error);
+      } finally {
+        setSaving(false);
+      }
     } else {
-      setSaving(true);
-      await submitOnboarding(
-        Object.entries(answers).map(([id, responses]) => ({ id, responses }))
-      );
-      setSaving(false);
-      setDone(true);
-      onFinish?.();
+      try {
+        setSaving(true);
+        await submitOnboarding(payload);
+        setDone(true);
+        if (onFinish) {
+          onFinish();
+        } else {
+          window.location.href = "/";
+        }
+      } catch (error) {
+        console.error("[Onboarding] Failed to submit", error);
+      } finally {
+        setSaving(false);
+      }
     }
   };
 

@@ -6,11 +6,13 @@ import { z } from "zod";
 import { savePersonality, getPersonalityByUserId } from "./db";
 import { chatRouter } from "./chat";
 import { timelineRouter } from "./timeline";
+import { onboardingRouter } from "./onboarding";
 
 export const appRouter = router({
   system: systemRouter,
   chat: chatRouter,
   timeline: timelineRouter,
+  onboarding: onboardingRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
