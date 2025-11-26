@@ -9,6 +9,7 @@ import { timelineRouter } from "./timeline";
 import { onboardingRouter } from "./onboarding";
 import { matchingRouter } from "./matching/router";
 import { progressRouter } from "./progress";
+import { engagementRouter } from "./engagement/router";
 
 export const appRouter = router({
   system: systemRouter,
@@ -17,6 +18,7 @@ export const appRouter = router({
   onboarding: onboardingRouter,
   matching: matchingRouter,
   progress: progressRouter,
+  engagement: engagementRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
