@@ -7,6 +7,28 @@ import { trpc } from "@/lib/trpc";
 
 export type Message = { role: "user" | "assistant" | "system"; content: string };
 
+type PatternInsight = {
+  category: string;
+  label: string;
+  confidence?: number;
+  details?: Record<string, unknown>;
+};
+
+type MicroMission = {
+  description: string;
+  reward: string;
+  timeframe: "today" | "this_week";
+  domain?: string;
+  commitmentQuestion: string;
+  guidedChoices: string[];
+  meaning: string;
+};
+
+type ZeigarnikHook = {
+  reminder: string;
+  nextStep: string;
+};
+
 type Rhythm = {
   question: string;
   observation: string;
@@ -20,11 +42,15 @@ type ContextEntry = { title: string; note: string };
 type TalkResponse = {
   reply: Message;
   rhythm: Rhythm;
-  microInsight: string;
-  microMission: string;
+  insights: PatternInsight[];
+  microMissions: MicroMission[];
+  zeigarnikHooks: ZeigarnikHook[];
+  checkIns: { slot: string; prompt: string; scope: string }[];
   contextLog: ContextEntry[];
   futureSuggestions: string[];
   updatedHistory: Message[];
+  microInsight?: string;
+  microMission?: string;
 };
 
 const starterInsights = [
@@ -59,12 +85,12 @@ export function AssessorChat() {
 
   const talkMutation = trpc.chat.talk.useMutation({
     onSuccess: (data: TalkResponse) => {
-      setMessages(prev => [...prev, data.reply]);
+      setMessages(data.updatedHistory);
       setRhythm(data.rhythm);
       setContextLog(data.contextLog);
       setFutureSuggestions(data.futureSuggestions);
-      setMicroInsight(data.microInsight);
-      setMicroMission(data.microMission);
+      setMicroInsight(data.microInsight ?? data.insights[0]?.label ?? null);
+      setMicroMission(data.microMission ?? data.microMissions[0]?.description ?? null);
     },
   });
 

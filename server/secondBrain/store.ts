@@ -24,6 +24,13 @@ export type PatternInsight = {
 };
 
 export class SecondBrainStore {
+  private loadedUserId?: number;
+
+  async load(userId: number): Promise<void> {
+    this.loadedUserId = userId;
+    await this.ensureCore(userId);
+  }
+
   async getCore(userId: number): Promise<CoreProfile> {
     const db = await getDb();
     if (!db) return deriveCoreFromRecord(null);
@@ -202,6 +209,14 @@ export class SecondBrainStore {
       content: params.content,
       metadata: params.metadata,
     });
+  }
+
+  async addMessage(
+    userId: number,
+    params: { role?: Role; content: string; metadata?: Record<string, unknown> }
+  ): Promise<void> {
+    await this.ensureCore(userId);
+    await this.logMessage(userId, params);
   }
 
   async listRecentMessages(userId: number, limit = 25) {
