@@ -1,7 +1,13 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, personalities } from "../drizzle/schema";
-import { ENV } from './_core/env';
+import {
+  InsertUser,
+  onboardingResponses,
+  personalities,
+  userSettings,
+  users,
+} from "../drizzle/schema";
+import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -118,4 +124,88 @@ export async function getPersonalityByUserId(userId: number) {
 
   const result = await db.select().from(personalities).where(eq(personalities.userId, userId)).limit(1);
   return result.length > 0 ? result[0] : undefined;
+}
+
+type OnboardingPayload = { id: string; responses: string[] }[];
+
+const getStepNumber = (stepId: string) => {
+  let hash = 0;
+  for (let i = 0; i < stepId.length; i++) {
+    hash = (hash << 5) - hash + stepId.charCodeAt(i);
+    hash |= 0; // Convert to 32bit integer
+  }
+  return Math.abs(hash);
+};
+
+async function upsertOnboardingResponses(
+  userId: number,
+  payload: OnboardingPayload,
+  status: "in_progress" | "completed",
+) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot save onboarding: database not available");
+    return;
+  }
+
+  const now = new Date();
+
+  for (const entry of payload) {
+    const stepNumber = getStepNumber(entry.id);
+    const responses = { id: entry.id, responses: entry.responses } as Record<string, unknown>;
+
+    await db
+      .insert(onboardingResponses)
+      .values({
+        userId,
+        step: stepNumber,
+        responses,
+        status,
+        completedAt: status === "completed" ? now : null,
+      })
+      .onDuplicateKeyUpdate({
+        set: {
+          responses,
+          status,
+          updatedAt: now,
+          completedAt: status === "completed" ? now : null,
+        },
+      });
+  }
+}
+
+export async function saveOnboardingProgress(userId: number, payload: OnboardingPayload) {
+  await upsertOnboardingResponses(userId, payload, "in_progress");
+}
+
+async function markOnboardingCompleted(userId: number) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot mark onboarding completion: database not available");
+    return;
+  }
+
+  const existing = await db.select().from(userSettings).where(eq(userSettings.userId, userId)).limit(1);
+  const currentPreferences = (existing[0]?.preferences as Record<string, unknown> | null) ?? {};
+  const preferences = { ...currentPreferences, onboardingCompleted: true } as Record<string, unknown>;
+
+  if (existing.length === 0) {
+    await db.insert(userSettings).values({
+      userId,
+      preferences,
+    });
+  } else {
+    await db
+      .update(userSettings)
+      .set({
+        preferences,
+        updatedAt: new Date(),
+      })
+      .where(eq(userSettings.userId, userId));
+  }
+}
+
+export async function finalizeOnboarding(userId: number, payload: OnboardingPayload) {
+  await upsertOnboardingResponses(userId, payload, "completed");
+  await markOnboardingCompleted(userId);
 }
