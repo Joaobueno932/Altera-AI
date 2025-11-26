@@ -4,7 +4,7 @@ import { BrainDomainName } from "../secondBrain/domains";
 import { evaluateTriggers, persistMemory } from "./triggers";
 import { generateMicroInsights } from "./microInsights";
 import { planMicroMissions, MicroMission } from "./microMissions";
-import { planCheckIns } from "./checkins";
+import { planCheckIns, type CheckInMessage, type CheckInPlan } from "./checkins";
 import { buildNotifications } from "./notifications";
 import { buildZeigarnikHooks, ZeigarnikHook } from "./zeigarnik";
 
@@ -34,6 +34,37 @@ export class EngagementEngine {
 
   constructor(store = new SecondBrainStore()) {
     this.store = store;
+  }
+
+  async planStandaloneCheckIns(userId: number): Promise<CheckInMessage[]> {
+    await this.store.ensureCore(userId);
+
+    const core = await this.store.getCore(userId);
+    const domains = await this.store.getDomains(userId);
+
+    const activeDomains = Object.values(domains)
+      .filter(domain => domain.active)
+      .map(domain => domain.name);
+
+    const slot = selectCheckInSlot();
+    const plans = planCheckIns(slot, new Date().getDate());
+
+    return plans.map(plan => {
+      const alias = core.identity.aliases[0] ?? "Ei";
+      const reflection = core.metacognition.selfReflection[0] ?? "O que mudou desde nosso último papo?";
+      const habit = core.behavior.habits[0] ?? "qual hábito quer reforçar hoje";
+      const focus = activeDomains[0] ?? "sua jornada";
+
+      const kind: CheckInMessage["kind"] = plan.slot === "weekly" ? "weekly_review" : "daily";
+
+      return {
+        title: `Check-in ${plan.scope}`,
+        body: `${alias}, ${plan.prompt} Foco atual: ${focus}. Reflexão: ${reflection}. Lembrete: ${habit}.`,
+        kind,
+        channel: "chat",
+        metadata: { slot: plan.slot, scope: plan.scope },
+      } satisfies CheckInMessage;
+    });
   }
 
   async processMessage(
@@ -165,6 +196,16 @@ const buildWeeklyStory = (insight?: string, domain?: BrainDomainName): string | 
   if (!insight) return undefined;
   const focus = domain ? `no domínio ${domain}` : "na sua jornada";
   return `Micro-história da semana ${focus}: ${insight}`;
+};
+
+const selectCheckInSlot = (): CheckInPlan["slot"] => {
+  const now = new Date();
+  const hour = now.getHours();
+
+  if (now.getDay() === 0 || now.getDay() === 6) return "weekly";
+  if (hour < 12) return "morning";
+  if (hour < 18) return "afternoon";
+  return "evening";
 };
 
 const buildRhythm = (message: string, history: ChatMessage[]): Rhythm => {
