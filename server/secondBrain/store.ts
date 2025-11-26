@@ -1,14 +1,16 @@
 import { and, eq } from "drizzle-orm";
 import {
-  BrainCore,
-  BrainDomain,
-  BrainInsight,
-  BrainMicroModule,
-  brainCores,
-  brainDomains,
-  brainInsights,
-  brainMessages,
-  brainMicroModules,
+  SecondBrainCore as BrainCore,
+  SecondBrainDomain as BrainDomain,
+  SecondBrainMicroModule as BrainMicroModule,
+  ProgressGlobal,
+  UserInsight as BrainInsight,
+  userInsights as brainInsights,
+  userMessages as brainMessages,
+  progressGlobal,
+  secondBrainCore as brainCores,
+  secondBrainDomains as brainDomains,
+  secondBrainMicroModules as brainMicroModules,
 } from "../../drizzle/schema";
 import { getDb } from "../db";
 import { Role } from "../_core/llm";
@@ -241,19 +243,41 @@ export class SecondBrainStore {
       insights.map(insight => ({
         userId,
         category: insight.category,
-        label: insight.label,
+        summary: insight.label,
         confidence: insight.confidence ?? 50,
         details: insight.details,
       }))
     );
   }
 
+  async listRecentInsights(userId: number, limit = 15): Promise<BrainInsight[]> {
+    const db = await getDb();
+    if (!db) return [];
+
+    const rows = await db
+      .select()
+      .from(brainInsights)
+      .where(eq(brainInsights.userId, userId))
+      .orderBy(brainInsights.createdAt)
+      .limit(limit);
+
+    return rows;
+  }
+
+  async getProgress(userId: number): Promise<ProgressGlobal | null> {
+    const db = await getDb();
+    if (!db) return null;
+
+    const [row] = await db.select().from(progressGlobal).where(eq(progressGlobal.userId, userId)).limit(1);
+    return row ?? null;
+  }
+
   private mapDomain(row: BrainDomain): DomainState {
     return {
-      name: row.name as BrainDomainName,
-      active: row.active === "yes",
-      activationReason: row.activationReason ?? undefined,
-      signals: (row.signals as DomainState["signals"]) ?? {},
+      name: (row.domainKey as BrainDomainName) ?? "performance",
+      active: row.status === "active",
+      activationReason: row.description ?? undefined,
+      signals: ((row.metrics as DomainState["signals"]) ?? {}) as DomainState["signals"],
     };
   }
 }
