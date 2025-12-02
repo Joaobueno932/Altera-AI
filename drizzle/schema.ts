@@ -149,6 +149,8 @@ export const userInsights = mysqlTable(
 
 export type UserInsight = typeof userInsights.$inferSelect;
 export type InsertUserInsight = typeof userInsights.$inferInsert;
+export type BrainInsight = UserInsight;
+export { userInsights as brainInsights };
 
 export const userMessages = mysqlTable(
   "user_messages",
@@ -325,3 +327,22 @@ export const userSettings = mysqlTable(
 
 export type UserSetting = typeof userSettings.$inferSelect;
 export type InsertUserSetting = typeof userSettings.$inferInsert;
+
+// Personality table for Big Five results and answers
+export const personalities = mysqlTable(
+  "personalities",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull().references(() => users.id),
+    bigFiveScores: json("bigFiveScores"),
+    answers: json("answers"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    personalityUserIdx: uniqueIndex("uq_personality_user").on(table.userId),
+  })
+);
+
+export type Personality = typeof personalities.$inferSelect;
+export type InsertPersonality = typeof personalities.$inferInsert;
