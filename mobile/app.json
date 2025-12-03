@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "Altera Mobile",
+    "slug": "altera-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "alteramobile",
+    "jsEngine": "hermes",
+    "platforms": ["ios", "android"],
+    "assetBundlePatterns": ["**/*"],
+    "extra": {
+      "eas": {
+        "projectId": "placeholder-project-id"
+      }
+    }
+  }
+}
