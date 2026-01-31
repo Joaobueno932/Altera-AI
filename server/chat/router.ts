@@ -2,20 +2,12 @@ import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { processUserMessage } from "./engine";
 import { ChatMessage } from "./types";
-
-const messageSchema = z.object({
-  role: z.enum(["user", "assistant"]),
-  content: z.string(),
-});
+import { ChatTalkInput, ChatTalkOutput } from "@shared/schemas";
 
 export const chatRouter = router({
   talk: protectedProcedure
-    .input(
-      z.object({
-        message: z.string().min(1, "Mensagem obrigatória"),
-        history: z.array(messageSchema).default([]),
-      })
-    )
+    .input(ChatTalkInput)
+    .output(ChatTalkOutput)
     .mutation(async ({ input, ctx }) => {
       const result = await processUserMessage({
         userId: ctx.user.id,

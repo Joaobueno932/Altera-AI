@@ -10,6 +10,7 @@ import { onboardingRouter } from "./onboarding";
 import { matchingRouter } from "./matching/router";
 import { progressRouter } from "./progress";
 import { engagementRouter } from "./engagement/router";
+import { AuthLogoutOutput, AuthMeOutput } from "@shared/schemas";
 
 export const appRouter = router({
   system: systemRouter,
@@ -20,14 +21,18 @@ export const appRouter = router({
   progress: progressRouter,
   engagement: engagementRouter,
   auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
-    logout: publicProcedure.mutation(({ ctx }) => {
-      const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      return {
-        success: true,
-      } as const;
-    }),
+    me: publicProcedure
+      .output(AuthMeOutput)
+      .query(opts => opts.ctx.user),
+    logout: publicProcedure
+      .output(AuthLogoutOutput)
+      .mutation(({ ctx }) => {
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+        return {
+          success: true,
+        };
+      }),
   }),
 
   personality: router({

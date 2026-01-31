@@ -2,6 +2,7 @@ import { desc, eq } from "drizzle-orm";
 import { progressGlobal, weeklyEvolution } from "../../drizzle/schema";
 import { getDb } from "../db";
 import { protectedProcedure, router } from "../_core/trpc";
+import { ProgressOverviewOutput } from "@shared/schemas";
 
 function clampScore(value: number | undefined | null) {
   if (typeof value !== "number" || Number.isNaN(value)) return undefined;
@@ -30,7 +31,9 @@ const defaultMicroModules = [
 ];
 
 export const progressRouter = router({
-  getOverview: protectedProcedure.query(async ({ ctx }) => {
+  getOverview: protectedProcedure
+    .output(ProgressOverviewOutput)
+    .query(async ({ ctx }) => {
     const db = await getDb();
     const userId = ctx.user.id;
 
