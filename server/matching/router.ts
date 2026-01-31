@@ -7,6 +7,7 @@ import { calculateCompatibility } from "./compatibility";
 import { MatchingEngine } from "./matchingEngine";
 import { FeedSuggestion, MatchingFeed } from "./matchingFeed";
 import { DeepProfile, ProfileBuilder } from "./profileBuilder";
+import { MatchingFeedInput, MatchingFeedOutput } from "@shared/schemas";
 
 const MAX_LIMIT = 50;
 
@@ -20,7 +21,8 @@ export type MatchingFeedCard = {
 
 export const matchingRouter = router({
   feed: protectedProcedure
-    .input(z.object({ limit: z.number().min(1).max(MAX_LIMIT).default(10) }).optional())
+    .input(MatchingFeedInput)
+    .output(MatchingFeedOutput)
     .query(async ({ ctx, input }) => {
       const userId = ctx.user.id;
       const limit = input?.limit ?? 10;

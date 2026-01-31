@@ -4,6 +4,7 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { progressGlobal, weeklyEvolution } from "../../drizzle/schema";
 import { SecondBrainStore } from "../secondBrain/store";
+import { TimelineSnapshotInput, TimelineSnapshotOutput } from "@shared/schemas";
 
 const moodPalette = ["focado", "calmo", "energizado", "curioso", "reflexivo"] as const;
 const habitCatalog = [
@@ -28,13 +29,8 @@ function oscillate(base: number, variance: number) {
 
 export const timelineRouter = router({
   snapshot: protectedProcedure
-    .input(
-      z
-        .object({
-          limit: z.number().min(3).max(20).optional(),
-        })
-        .optional(),
-    )
+    .input(TimelineSnapshotInput)
+    .output(TimelineSnapshotOutput)
     .query(async ({ ctx, input }) => {
       const limit = input?.limit ?? 8;
       const now = new Date();
