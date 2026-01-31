@@ -79,17 +79,17 @@ export class SecondBrainStore {
         userId,
         identity: merged.identity,
         lifeContext: merged.lifeContext,
-        bigFive: merged.bigFive,
-        behavior: merged.behavior,
-        metacognition: merged.metacognition,
+        goals: merged.goals,
+        strategies: merged.strategies,
+        score: merged.bigFive.openness, // Usando openness como score base por falta de campo melhor mapeado
       })
       .onDuplicateKeyUpdate({
         set: {
           identity: merged.identity,
           lifeContext: merged.lifeContext,
-          bigFive: merged.bigFive,
-          behavior: merged.behavior,
-          metacognition: merged.metacognition,
+          goals: merged.goals,
+          strategies: merged.strategies,
+          score: merged.bigFive.openness,
         },
       });
   }
@@ -109,7 +109,7 @@ export class SecondBrainStore {
 
     const rows = await db.select().from(brainDomains).where(eq(brainDomains.userId, userId));
     rows.forEach(row => {
-      base[row.name as BrainDomainName] = this.mapDomain(row);
+      base[row.domainKey as BrainDomainName] = this.mapDomain(row);
     });
 
     return base;
@@ -123,16 +123,17 @@ export class SecondBrainStore {
       .insert(brainDomains)
       .values({
         userId,
-        name: state.name,
-        active: state.active ? "yes" : "no",
-        activationReason: state.activationReason,
-        signals: state.signals,
+        domainKey: state.name,
+        title: state.name.charAt(0).toUpperCase() + state.name.slice(1),
+        status: state.active ? "active" : "paused",
+        description: state.activationReason,
+        metrics: state.signals,
       })
       .onDuplicateKeyUpdate({
         set: {
-          active: state.active ? "yes" : "no",
-          activationReason: state.activationReason,
-          signals: state.signals,
+          status: state.active ? "active" : "paused",
+          description: state.activationReason,
+          metrics: state.signals,
         },
       });
   }
@@ -157,7 +158,7 @@ export class SecondBrainStore {
       .where(
         and(
           eq(brainMicroModules.userId, userId),
-          eq(brainMicroModules.name, activation.name)
+          eq(brainMicroModules.moduleKey, activation.name)
         )
       )
       .limit(1);
@@ -165,12 +166,13 @@ export class SecondBrainStore {
     const payload = {
       userId,
       domainId,
-      domainName: activation.domain,
-      name: activation.name,
+      moduleKey: activation.name,
+      title: activation.name.split("_").map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(" "),
       depth: activation.depth,
-      active: active ? "yes" : "no",
+      status: active ? "active" : "draft",
       triggers: activation.triggers,
       state,
+      progress: 0,
     } satisfies Partial<BrainMicroModule>;
 
     if (existing[0]) {
@@ -189,10 +191,10 @@ export class SecondBrainStore {
 
     const rows = await db.select().from(brainMicroModules).where(eq(brainMicroModules.userId, userId));
     return rows.map(row => ({
-      name: row.name,
-      domain: row.domainName as BrainDomainName | undefined,
+      name: row.moduleKey,
+      domain: undefined, // No longer stored directly in micro_modules in this schema
       depth: row.depth,
-      active: row.active === "yes",
+      active: row.status === "active",
       triggers: (row.triggers as string[]) ?? [],
       state: (row.state as Record<string, unknown>) ?? {},
     }));
@@ -269,7 +271,7 @@ export class SecondBrainStore {
     if (!db) return null;
 
     const [row] = await db.select().from(progressGlobal).where(eq(progressGlobal.userId, userId)).limit(1);
-    return row ?? null;
+    return (row as ProgressGlobal) ?? null;
   }
 
   private mapDomain(row: BrainDomain): DomainState {

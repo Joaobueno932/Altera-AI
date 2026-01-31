@@ -1,4 +1,4 @@
-import { BrainCore } from "../../drizzle/schema";
+import { SecondBrainCore as BrainCore } from "../../drizzle/schema";
 
 export type BigFiveScores = {
   openness: number;
@@ -27,6 +27,8 @@ export type CoreProfile = {
     selfReflection: string[];
     blindspots: string[];
   };
+  goals: Array<{ title: string; status: string }>;
+  strategies: Record<string, unknown>;
 };
 
 export const emptyBigFive: BigFiveScores = {
@@ -43,6 +45,8 @@ export const createDefaultCoreProfile = (): CoreProfile => ({
   bigFive: emptyBigFive,
   behavior: { habits: [], preferences: [] },
   metacognition: { selfReflection: [], blindspots: [] },
+  goals: [],
+  strategies: {},
 });
 
 export const mergeCoreProfile = (
@@ -75,6 +79,8 @@ export const mergeCoreProfile = (
         ...(updates.metacognition?.blindspots ?? []),
       ]),
     },
+    goals: updates.goals ?? base.goals,
+    strategies: { ...base.strategies, ...(updates.strategies ?? {}) },
   };
 };
 
@@ -89,11 +95,13 @@ export const normalizeBigFive = (scores: BigFiveScores): BigFiveScores => ({
 export const deriveCoreFromRecord = (record?: BrainCore | null): CoreProfile => {
   if (!record) return createDefaultCoreProfile();
   const profile: CoreProfile = {
-    identity: record.identity ?? { statements: [], aliases: [] },
-    lifeContext: record.lifeContext ?? { roles: [], goals: [] },
-    bigFive: normalizeBigFive(record.bigFive ?? emptyBigFive),
-    behavior: record.behavior ?? { habits: [], preferences: [] },
-    metacognition: record.metacognition ?? { selfReflection: [], blindspots: [] },
+    identity: (record.identity as any) ?? { statements: [], aliases: [] },
+    lifeContext: (record.lifeContext as any) ?? { roles: [], goals: [] },
+    bigFive: normalizeBigFive((record as any).bigFive ?? emptyBigFive),
+    behavior: (record as any).behavior ?? { habits: [], preferences: [] },
+    metacognition: (record as any).metacognition ?? { selfReflection: [], blindspots: [] },
+    goals: record.goals ?? [],
+    strategies: record.strategies ?? {},
   };
 
   return profile;
