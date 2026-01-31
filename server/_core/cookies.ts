@@ -39,10 +39,16 @@ export function getSessionCookieOptions(
   //       ? hostname
   //       : undefined;
 
+  const secure = isSecureRequest(req);
+
+  // Browsers reject SameSite=None cookies over non-secure (HTTP) connections.
+  // For local/dev over HTTP, prefer SameSite=Lax and secure=false to ensure the
+  // session cookie can be set and read. In production/HTTPS, use SameSite=None
+  // and secure=true to allow cross-site OAuth redirects to set the cookie.
   return {
     httpOnly: true,
     path: "/",
-    sameSite: "none",
-    secure: isSecureRequest(req),
+    sameSite: secure ? "none" : "lax",
+    secure,
   };
 }

@@ -60,29 +60,32 @@ export function OnboardingFlow({ onFinish }: { onFinish?: () => void }) {
     const payload = Object.entries(answers).map(([id, responses]) => ({ id, responses }));
 
     if (index < onboardingSteps.length - 1) {
+      // Avança para o próximo passo mesmo que a persistência em segundo plano falhe.
+      // O progresso já é salvo via useEffect quando answers muda.
+      setSaving(true);
       try {
-        setSaving(true);
         await saveOnboardingProgress(payload);
-        setIndex(prev => prev + 1);
       } catch (error) {
         console.error("[Onboarding] Failed to save progress", error);
       } finally {
         setSaving(false);
+        setIndex(prev => prev + 1);
       }
     } else {
       try {
         setSaving(true);
         await submitOnboarding(payload);
+      } catch (error) {
+        // Não bloqueia a finalização quando a API não está disponível.
+        console.error("[Onboarding] Failed to submit", error);
+      } finally {
+        setSaving(false);
         setDone(true);
         if (onFinish) {
           onFinish();
         } else {
           window.location.href = "/";
         }
-      } catch (error) {
-        console.error("[Onboarding] Failed to submit", error);
-      } finally {
-        setSaving(false);
       }
     }
   };

@@ -8,6 +8,7 @@ import {
   users,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
+import { infoOnce } from "./_core/log";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -31,7 +32,13 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot upsert user: database not available");
+    if (ENV.isProduction) {
+      console.warn("[Database] Cannot upsert user: database not available");
+    } else {
+      infoOnce(
+        "[Database] Upsert skipped: no DATABASE_URL configured (dev mode). Set DATABASE_URL to enable persistence."
+      );
+    }
     return;
   }
 
@@ -86,7 +93,13 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 export async function getUserByOpenId(openId: string) {
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot get user: database not available");
+    if (ENV.isProduction) {
+      console.warn("[Database] Cannot get user: database not available");
+    } else {
+      infoOnce(
+        "[Database] Read skipped: no DATABASE_URL configured (dev mode). Returning undefined."
+      );
+    }
     return undefined;
   }
 
@@ -99,7 +112,13 @@ export async function getUserByOpenId(openId: string) {
 export async function savePersonality(data: { userId: number; bigFiveScores: any; answers: any }) {
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot save personality: database not available");
+    if (ENV.isProduction) {
+      console.warn("[Database] Cannot save personality: database not available");
+    } else {
+      infoOnce(
+        "[Database] Save personality skipped: no DATABASE_URL configured (dev mode)."
+      );
+    }
     return;
   }
 
@@ -118,7 +137,13 @@ export async function savePersonality(data: { userId: number; bigFiveScores: any
 export async function getPersonalityByUserId(userId: number) {
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot get personality: database not available");
+    if (ENV.isProduction) {
+      console.warn("[Database] Cannot get personality: database not available");
+    } else {
+      infoOnce(
+        "[Database] Get personality skipped: no DATABASE_URL configured (dev mode). Returning undefined."
+      );
+    }
     return undefined;
   }
 
@@ -144,7 +169,13 @@ async function upsertOnboardingResponses(
 ) {
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot save onboarding: database not available");
+    if (ENV.isProduction) {
+      console.warn("[Database] Cannot save onboarding: database not available");
+    } else {
+      infoOnce(
+        "[Database] Save onboarding skipped: no DATABASE_URL configured (dev mode)."
+      );
+    }
     return;
   }
 
@@ -181,7 +212,15 @@ export async function saveOnboardingProgress(userId: number, payload: Onboarding
 async function markOnboardingCompleted(userId: number) {
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot mark onboarding completion: database not available");
+    if (ENV.isProduction) {
+      console.warn(
+        "[Database] Cannot mark onboarding completion: database not available"
+      );
+    } else {
+      infoOnce(
+        "[Database] Mark onboarding completed skipped: no DATABASE_URL configured (dev mode)."
+      );
+    }
     return;
   }
 

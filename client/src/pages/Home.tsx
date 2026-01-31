@@ -26,7 +26,7 @@ const tabs = [
 
 export default function Home() {
   const { user, loading, isAuthenticated, logout } = useAuth();
-  const [, setLocation] = useLocation();
+  const [pathname, setLocation] = useLocation();
   const [active, setActive] = useState("brain");
 
   const tagOptions = useMemo(
@@ -41,10 +41,12 @@ export default function Home() {
   );
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      setLocation("/login");
-    }
-  }, [loading, isAuthenticated, setLocation]);
+    if (loading) return;
+    if (isAuthenticated) return;
+    // Evita loops de navegação caso já esteja na tela de login
+    if (pathname === "/login") return;
+    setLocation("/login");
+  }, [loading, isAuthenticated, pathname, setLocation]);
 
   if (loading) {
     return (

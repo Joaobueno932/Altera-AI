@@ -47,6 +47,11 @@ class OAuthService {
     code: string,
     state: string
   ): Promise<ExchangeTokenResponse> {
+    if (!ENV.oAuthServerUrl) {
+      throw new Error(
+        "OAuth server URL is not configured (OAUTH_SERVER_URL). Cannot exchange code for token."
+      );
+    }
     const payload: ExchangeTokenRequest = {
       clientId: ENV.appId,
       grantType: "authorization_code",
@@ -65,6 +70,11 @@ class OAuthService {
   async getUserInfoByToken(
     token: ExchangeTokenResponse
   ): Promise<GetUserInfoResponse> {
+    if (!ENV.oAuthServerUrl) {
+      throw new Error(
+        "OAuth server URL is not configured (OAUTH_SERVER_URL). Cannot fetch user info by token."
+      );
+    }
     const { data } = await this.client.post<GetUserInfoResponse>(
       GET_USER_INFO_PATH,
       {
@@ -235,6 +245,12 @@ class SDKServer {
   async getUserInfoWithJwt(
     jwtToken: string
   ): Promise<GetUserInfoWithJwtResponse> {
+    if (!ENV.oAuthServerUrl) {
+      // Avoid making a network request with an invalid base URL
+      throw new Error(
+        "OAuth server URL is not configured (OAUTH_SERVER_URL). Cannot fetch user info."
+      );
+    }
     const payload: GetUserInfoWithJwtRequest = {
       jwtToken,
       projectId: ENV.appId,
@@ -270,21 +286,36 @@ class SDKServer {
     const signedInAt = new Date();
     let user = await db.getUserByOpenId(sessionUserId);
 
-    // If user not in DB, sync from OAuth server automatically
+    // If user not in DB, sync from OAuth server automatically (if configured)
     if (!user) {
-      try {
-        const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
-        await db.upsertUser({
-          openId: userInfo.openId,
-          name: userInfo.name || null,
-          email: userInfo.email ?? null,
-          loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
-          lastSignedIn: signedInAt,
-        });
-        user = await db.getUserByOpenId(userInfo.openId);
-      } catch (error) {
-        console.error("[Auth] Failed to sync user from OAuth:", error);
-        throw ForbiddenError("Failed to sync user info");
+      if (!ENV.oAuthServerUrl) {
+        // Be less noisy in dev where OAuth server may be intentionally absent
+        const { ENV: _ENV } = await import("./env");
+        const { infoOnce } = await import("./log");
+        if (_ENV.isProduction) {
+          console.warn(
+            "[Auth] OAuth sync skipped: OAUTH_SERVER_URL is not configured."
+          );
+        } else {
+          infoOnce(
+            "[Auth] OAuth sync skipped in dev: set OAUTH_SERVER_URL to enable automatic user sync."
+          );
+        }
+      } else {
+        try {
+          const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
+          await db.upsertUser({
+            openId: userInfo.openId,
+            name: userInfo.name || null,
+            email: userInfo.email ?? null,
+            loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
+            lastSignedIn: signedInAt,
+          });
+          user = await db.getUserByOpenId(userInfo.openId);
+        } catch (error) {
+          console.error("[Auth] Failed to sync user from OAuth:", error);
+          throw ForbiddenError("Failed to sync user info");
+        }
       }
     }
 

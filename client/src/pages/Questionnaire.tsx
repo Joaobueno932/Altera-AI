@@ -56,10 +56,15 @@ export default function Questionnaire() {
   const savePersonality = trpc.personality.save.useMutation({
     onSuccess: () => {
       toast.success("Perfil criado com sucesso!");
-      setLocation("/home");
+      // Após concluir o questionário, encaminhe para login.
+      // A Home exige sessão e sem cookie pode gerar loop.
+      setLocation("/login");
     },
     onError: (error) => {
       toast.error("Erro ao salvar perfil: " + error.message);
+      // Mesmo em erro, siga para login para que o usuário se autentique
+      // e repita/recupere o processo sem travar na tela do formulário.
+      setLocation("/login");
     }
   });
 

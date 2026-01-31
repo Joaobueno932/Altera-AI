@@ -6,7 +6,7 @@ import { MobileContainer } from "@/components/ui/mobile-container";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { Mail, Lock } from "lucide-react";
-import { getLoginUrl } from "@/const";
+import { getSignupUrl } from "@/const";
 
 export default function Signup() {
   const [, setLocation] = useLocation();
@@ -16,13 +16,15 @@ export default function Signup() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Em vez de navegar localmente sem sessão, iniciamos o fluxo de cadastro OAuth
     if (password === confirmPassword) {
-      setLocation("/questionnaire");
+      window.location.href = getSignupUrl();
     }
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = getLoginUrl();
+    // Inicia o fluxo de cadastro explícito no portal OAuth
+    window.location.href = getSignupUrl();
   };
 
   return (
